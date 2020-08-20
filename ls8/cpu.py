@@ -5,6 +5,7 @@ import sys
 LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001
+MUL = 0b10100010
 
 
 class CPU:
@@ -23,19 +24,36 @@ class CPU:
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+        print(sys.argv)
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # open program
+        program = open(sys.argv[1], 'r')
+        # read program
+        r = program.read()
+        # split everything after the #
+        s = r.split("\n")
+        for i in s:
+            if len(i) > 0:
+                if i[0] in '10':
+                    num = int(i[:8], 2)
+                    self.ram[address] = num
+                    address += 1
+
+        # join program
+
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010,  # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111,  # PRN R0
+        #     0b00000000,
+        #     0b00000001,  # HLT
+        # ]
+
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -44,6 +62,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
+        elif op == 'MUL':
+            self.reg[reg_a] = self.reg[reg_a] * self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -90,18 +110,23 @@ class CPU:
                 self.pc += 1
             elif ir == HLT:
                 break
+            elif ir == MUL:
+
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+
+                self.alu('MUL', operand_a, operand_b)
+                self.pc += 2
+
             else:
                 break
 
             self.pc += 1
 
-            self.trace()
+            # self.trace()
 
     def ram_read(self, addy):
         return self.ram[addy]
 
     def ram_write(self, addy, value):
-        if addy not in self.ram or self.ram[addy]:
-            self.ram[addy] = value
-        else:
-            print('Hey item something went wrong, check ram_write function')
+        self.ram[addy] = value

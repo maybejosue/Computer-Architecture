@@ -22,6 +22,7 @@ class CPU:
             'G': None,
             'E': None
         }
+
         self.machine_code = {
             0b10000010: self.LDI,
             0b01000111: self.PRN,
@@ -73,7 +74,6 @@ class CPU:
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-        print(op)
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
@@ -81,11 +81,9 @@ class CPU:
         elif op == 'MUL':
             self.reg[reg_a] = self.reg[reg_a] * self.reg[reg_b]
         elif op == 'CMP':
-            self.flag['E'] = 1 if reg_a == reg_b else 0
-            self.flag['L'] = 1 if reg_a < reg_b else 0
-            self.flag['G'] = 1 if reg_a > reg_b else 0
-        else:
-            raise Exception("Unsupported ALU operation")
+            self.flag['E'] = 1 if self.reg[reg_a] == self.reg[reg_b] else 0
+            self.flag['L'] = 1 if self.reg[reg_a] < self.reg[reg_b] else 0
+            self.flag['G'] = 1 if self.reg[reg_a] > self.reg[reg_b] else 0
 
     def trace(self):
         """
@@ -112,18 +110,20 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)
 
         self.alu('CMP', operand_a, operand_b)
-        self.pc += 2
+        self.pc += 3
 
     def JEQ(self):
         if self.flag['E'] == True:
-            self.JMP()
+            return self.JMP()
+        self.pc += 2
 
     def JNE(self):
         if self.flag['E'] == False:
-            self.JMP()
+            return self.JMP()
+        self.pc += 2
 
     def JMP(self):
-        operand_a = self.ram_read(self.pc + 1)
+        operand_a = self.ram_read(self.pc+1)
         self.pc = self.reg[operand_a]
 
     def LDI(self):
@@ -134,14 +134,14 @@ class CPU:
         # set value of a register
         self.reg[operand_a] = operand_b
 
-        self.pc += 2
+        self.pc += 3
 
     def PRN(self):
         current_value = self.ram_read(self.pc + 1)
 
         print(self.reg[current_value])
 
-        self.pc += 1
+        self.pc += 2
 
     def HLT(self):
         self.cycle = False
@@ -151,18 +151,14 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)
 
         self.alu('MUL', operand_a, operand_b)
-        self.pc += 2
+        self.pc += 3
 
     def run(self):
         """Run the CPU."""
         while self.cycle:
-            # ir set to ram address stored in register
             ir = self.ram[self.pc]
-            self.trace()
 
             self.machine_code[ir]()
-
-            self.pc += 1
 
     def ram_read(self, addy):
         return self.ram[addy]
